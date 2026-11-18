@@ -34,7 +34,7 @@ def create_newspaper():
 
     # --- MASTHEAD ---
     draw.rectangle([30, 20, 994, 90], fill=c_red)
-    draw.text((512, 32), "THE WORLD IN ONE PAGE", fill="#FFFFFF", font=f_masthead, anchor="mm")
+    draw.text((512, 55), "THE WORLD IN ONE PAGE", fill="#FFFFFF", font=f_masthead, anchor="mm")
     
     # Sub-masthead bar
     draw.rectangle([30, 93, 994, 118], fill="#FFFFFF")
@@ -53,9 +53,10 @@ def create_newspaper():
     draw.rectangle([30, 130, 994, 148], fill="#F0F2F5")
     draw.text((40, 134), "LEAD STORY • GLOBAL DIPLOMACY", fill=c_red, font=f_subhead)
     
-    # Lead title & body
-    draw.text((40, 158), "XI & TRUMP MEET IN SHENZHEN AS APEC OPENS; TRILATERAL SUMMIT LOADS", fill=c_black, font=f_lead_title)
-    
+    # Lead title & body (title wrapped to the text column, clear of the pictogram)
+    lead_title = "XI & TRUMP MEET IN SHENZHEN AS APEC OPENS; TRILATERAL SUMMIT SET FOR THURSDAY"
+    n_lead = draw_wrapped(draw, 40, 156, lead_title, f_lead_title, c_black, 680, 26)
+
     lead_text = (
         "Xi Jinping greets Donald Trump on the tarmac in Shenzhen for a rare personal airport greeting as APEC opens. "
         "Xi and Vladimir Putin meet in Shenzhen the same day ahead of Thursday's first-ever three-way Xi-Trump-Putin summit. "
@@ -63,7 +64,7 @@ def create_newspaper():
     )
     # Simple word wrap simulation for lead body (two columns inside lead box)
     # Left text column: x=40 to 680, Right pictogram: x=700 to 984
-    y = 188
+    y = 156 + n_lead * 26 + 8
     for line in wrap_text(lead_text, 85):
         draw.text((40, y), line, fill=c_black, font=f_lead_body)
         y += 16
@@ -84,15 +85,15 @@ def create_newspaper():
     draw.rectangle([30, 345, 504, 545], outline=c_line, width=1)
     draw.rectangle([30, 345, 504, 363], fill="#F0F2F5")
     draw.text((40, 349), "MIDDLE EAST CONFLICT • STRAIT OF HORMUZ", fill=c_navy, font=f_subhead)
-    draw.text((40, 372), "US JETS STRIKE QESHM ISLAND MISSILE SITE", fill=c_black, font=f_med_title)
-    
+    n_m1 = draw_wrapped(draw, 40, 372, "US JETS STRIKE QESHM ISLAND MISSILE SITE", f_med_title, c_black, 464, 19)
+
     m1_text = (
         "US fighter jets strike an Iranian Revolutionary Guard missile launch site "
         "on Qeshm Island in the Strait of Hormuz in response to attacks on US personnel. "
         "Iran says it targeted US drone and missile sites in Kuwait overnight—its first attack "
         "on Kuwait since September—and fired at a US site in Bahrain; a UAE ship is hit."
     )
-    y = 398
+    y = 372 + n_m1 * 19 + 8
     for line in wrap_text(m1_text, 55):
         draw.text((40, y), line, fill=c_black, font=f_med_body)
         y += 15
@@ -101,14 +102,14 @@ def create_newspaper():
     draw.rectangle([520, 345, 994, 545], outline=c_line, width=1)
     draw.rectangle([520, 345, 994, 363], fill="#F0F2F5")
     draw.text((530, 349), "EASTERN EUROPE • UKRAINE CONFLICT", fill=c_navy, font=f_subhead)
-    draw.text((530, 372), "KERCH BRIDGE HIT FOR SECOND DAY; SPAN COLLAPSES", fill=c_black, font=f_med_title)
-    
+    n_m2 = draw_wrapped(draw, 530, 372, "KERCH BRIDGE HIT FOR SECOND DAY; SPAN COLLAPSES", f_med_title, c_black, 464, 19)
+
     m2_text = (
         "Ukraine hits the Kerch Bridge to Crimea for a second consecutive day in a major operation. "
         "Part of the road span collapses following precision drone and missile strikes. "
         "All cross-strait vehicular and rail traffic is suspended indefinitely as structural assessments begin."
     )
-    y = 398
+    y = 372 + n_m2 * 19 + 8
     for line in wrap_text(m2_text, 55):
         draw.text((530, y), line, fill=c_black, font=f_med_body)
         y += 15
@@ -155,12 +156,12 @@ def create_newspaper():
         draw.rectangle([x1, y1, x2, y1+18], fill="#F0F2F5")
         draw.text((x1+6, y1+3), cat, fill=c_navy, font=f_subhead)
         
-        # Title (wrap if needed)
-        draw.text((x1+6, y1+24), title, fill=c_black, font=f_small_title)
-        
+        # Title (wrapped to the box width, never overflowing into the next box)
+        n_title = draw_wrapped(draw, x1+6, y1+24, title, f_small_title, c_black, x2-x1-12, 15)
+
         # Body text wrap
         bw = int((x2 - x1 - 12) / 6.5) # approximate chars per line
-        y_text = y1+44
+        y_text = y1+24+n_title*15+6
         for line in wrap_text(body, max(25, int(bw))):
             if y_text < y2 - 12:
                 draw.text((x1+6, y_text), line, fill=c_black, font=f_small_body)
@@ -173,6 +174,29 @@ def create_newspaper():
     # Save output
     image.save("entry.png", "PNG")
     print("Successfully generated entry.png (1024x1024)")
+
+def wrap_to_width(draw, text, font, max_width):
+    words = text.split()
+    lines = []
+    cur = ""
+    for w in words:
+        trial = (cur + " " + w).strip()
+        if draw.textlength(trial, font=font) <= max_width:
+            cur = trial
+        else:
+            if cur:
+                lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines
+
+def draw_wrapped(draw, x, y, text, font, fill, max_width, line_height):
+    lines = wrap_to_width(draw, text, font, max_width)
+    for ln in lines:
+        draw.text((x, y), ln, fill=fill, font=font)
+        y += line_height
+    return len(lines)
 
 def wrap_text(text, width_chars):
     words = text.split()
